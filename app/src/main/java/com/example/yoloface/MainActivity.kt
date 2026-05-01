@@ -1,7 +1,6 @@
 package com.example.yoloface
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
