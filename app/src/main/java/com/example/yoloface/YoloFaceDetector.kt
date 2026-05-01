@@ -13,6 +13,8 @@ import java.io.FileInputStream
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
+data class FaceBox(val bounds: RectF, val confidence: Float)
+
 class YoloFaceDetector(context: Context, modelName: String) {
     private var interpreter: Interpreter? = null
 
@@ -37,7 +39,7 @@ class YoloFaceDetector(context: Context, modelName: String) {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    fun detect(bitmap: Bitmap): List<RectF> {
+    fun detect(bitmap: Bitmap): List<FaceBox> {
         val currentInterpreter = interpreter ?: return emptyList()
 
         // Setup image processor for YOLO: resize to 640x640, normalize to 0-1
@@ -52,7 +54,7 @@ class YoloFaceDetector(context: Context, modelName: String) {
 
         // Acquire output shape dynamically
         val outputShape = currentInterpreter.getOutputTensor(0).shape()
-        val results = mutableListOf<RectF>()
+        val results = mutableListOf<FaceBox>()
 
         try {
             // Standard YOLOv8 TFLite export is often [1, num_boxes, num_attributes] e.g., [1, 8400, 5]
@@ -80,7 +82,8 @@ class YoloFaceDetector(context: Context, modelName: String) {
                         val scaleX = bitmap.width.toFloat()
                         val scaleY = bitmap.height.toFloat()
                         
-                        results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
+                        val rect = RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY)
+                        results.add(FaceBox(rect, conf))
                     }
                 }
             } else if (outputShape.size == 3) {
@@ -108,7 +111,8 @@ class YoloFaceDetector(context: Context, modelName: String) {
                         val scaleX = bitmap.width.toFloat()
                         val scaleY = bitmap.height.toFloat()
                         
-                        results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
+                        val rect = RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY)
+                        results.add(FaceBox(rect, conf))
                     }
                 }
             }

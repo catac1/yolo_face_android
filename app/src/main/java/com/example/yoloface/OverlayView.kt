@@ -20,9 +20,15 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         strokeWidth = 8f
     }
     
-    private val textPaint = Paint().apply {
+    private val objectTypeTextPaint = Paint().apply {
         color = Color.GREEN
         textSize = 50f
+        style = Paint.Style.FILL
+    }
+
+    private val objectConfidenceTextPaint = Paint().apply {
+        color = Color.MAGENTA
+        textSize = 30f
         style = Paint.Style.FILL
     }
     private val borderPaint = Paint().apply {
@@ -31,11 +37,11 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         strokeWidth = 10f
     }
 
-    private var boundingBoxes: List<RectF> = emptyList()
+    private var boundingBoxes: List<FaceBox> = emptyList()
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
 
-    fun setResults(boxes: List<RectF>, imgWidth: Int, imgHeight: Int) {
+    fun setResults(boxes: List<FaceBox>, imgWidth: Int, imgHeight: Int) {
         this.boundingBoxes = boxes
         this.imageWidth = imgWidth
         this.imageHeight = imgHeight
@@ -65,7 +71,9 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         val offsetX = (viewWidth - scaledWidth) / 2f
         val offsetY = (viewHeight - scaledHeight) / 2f
 
-        for (box in boundingBoxes) {
+        for (faceBox in boundingBoxes) {
+            val box = faceBox.bounds
+            val conf = faceBox.confidence
             // Map box coordinates from image space to view space
             val mappedLeft = box.left * scale + offsetX
             val mappedTop = box.top * scale + offsetY
@@ -75,7 +83,10 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             val mappedBox = RectF(mappedLeft, mappedTop, mappedRight, mappedBottom)
 
             canvas.drawRect(mappedBox, paint)
-            canvas.drawText("Face", mappedBox.left, mappedBox.top - 10f, textPaint)
+            
+            val confText = String.format("%d", (conf * 100).toInt())
+            canvas.drawText("Face", mappedBox.left, mappedBox.top - 10f, objectTypeTextPaint)
+            canvas.drawText("$confText", mappedBox.left, mappedBox.top - 50f, objectConfidenceTextPaint)
         }
     }
 }

@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         val boxes = detector.detect(rotatedBitmap)
         Log.e("box count", "${boxes.size}")
         for ( box in boxes) {
-            Log.e("box shape", "((${box.left}, ${box.top}, ${box.width()}, ${box.height()})")
+            Log.e("box shape", "((${box.bounds.left}, ${box.bounds.top}, ${box.bounds.width()}, ${box.bounds.height()}) conf: ${box.confidence})")
         }
         
         val imgWidth = rotatedBitmap.width
