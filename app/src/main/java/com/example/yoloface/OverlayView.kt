@@ -78,15 +78,10 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             val box = faceBox.bounds
             val conf = faceBox.confidence
             // Map box coordinates from image space to view space
-            val mappedLeft = box.left * scale + offsetX
-            val mappedTop = box.top * scale + offsetY
-            val mappedRight = box.right * scale + offsetX
-            val mappedBottom = box.bottom * scale + offsetY
-
-            mappedBox.left = mappedLeft
-            mappedBox.top = mappedTop
-            mappedBox.right = mappedRight
-            mappedBox.bottom = mappedBottom
+            mappedBox.left = (box.left * scale) + offsetX
+            mappedBox.top = (box.top * scale) + offsetY
+            mappedBox.right = (box.right * scale) + offsetX
+            mappedBox.bottom = (box.bottom * scale) + offsetY
 
             canvas.drawRect(mappedBox, paint)
             
