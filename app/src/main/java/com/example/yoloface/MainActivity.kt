@@ -106,9 +106,16 @@ class MainActivity : AppCompatActivity() {
         )
 
         val boxes = detector.detect(rotatedBitmap)
-
+        Log.e("box count", "${boxes.size}")
+        for ( box in boxes) {
+            Log.e("box shape", "((${box.left}, ${box.top}, ${box.width()}, ${box.height()})")
+        }
+        
+        val imgWidth = rotatedBitmap.width
+        val imgHeight = rotatedBitmap.height
+        
         runOnUiThread {
-            binding.overlayView.setResults(boxes)
+            binding.overlayView.setResults(boxes, imgWidth, imgHeight)
         }
         
         imageProxy.close()

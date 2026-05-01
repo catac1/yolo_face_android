@@ -67,18 +67,18 @@ class YoloFaceDetector(context: Context, modelName: String) {
                 for (i in 0 until numBoxes) {
                     val conf = outputs[i][4] // Assuming index 4 is confidence
                     if (conf > 0.5f) {
-                        val cx = outputs[i][0]
-                        val cy = outputs[i][1]
-                        val w = outputs[i][2]
-                        val h = outputs[i][3]
+                        val xmin = outputs[i][0]
+                        val ymin = outputs[i][1]
+                        val xmax = outputs[i][2]
+                        val ymax = outputs[i][3]
                         
-                        val left = cx - w / 2
-                        val top = cy - h / 2
-                        val right = cx + w / 2
-                        val bottom = cy + h / 2
+                        val left = xmin
+                        val top = ymin
+                        val right = xmax
+                        val bottom = ymax
                         
-                        val scaleX = bitmap.width / 640f
-                        val scaleY = bitmap.height / 640f
+                        val scaleX = bitmap.width.toFloat()
+                        val scaleY = bitmap.height.toFloat()
                         
                         results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
                     }
@@ -95,18 +95,18 @@ class YoloFaceDetector(context: Context, modelName: String) {
                 for (i in 0 until numBoxes) {
                     val conf = outputs[4][i] // Assuming index 4 is confidence
                     if (conf > 0.5f) {
-                        val cx = outputs[0][i]
-                        val cy = outputs[1][i]
-                        val w = outputs[2][i]
-                        val h = outputs[3][i]
+                        val xmin = outputs[0][i]
+                        val ymin = outputs[1][i]
+                        val xmax = outputs[2][i]
+                        val ymax = outputs[3][i]
                         
-                        val left = cx - w / 2
-                        val top = cy - h / 2
-                        val right = cx + w / 2
-                        val bottom = cy + h / 2
+                        val left = xmin
+                        val top = ymin
+                        val right = xmax
+                        val bottom = ymax
                         
-                        val scaleX = bitmap.width / 640f
-                        val scaleY = bitmap.height / 640f
+                        val scaleX = bitmap.width.toFloat()
+                        val scaleY = bitmap.height.toFloat()
                         
                         results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
                     }
