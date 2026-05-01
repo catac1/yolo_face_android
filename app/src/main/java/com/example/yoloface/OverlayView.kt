@@ -60,7 +60,9 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         // Draw a red border along the edges of the view
         canvas.drawRect(0f, 0f, viewWidth, viewHeight, borderPaint)
         
-        if (boundingBoxes.isEmpty() || imageWidth == 1 || imageHeight == 1) return
+        if (boundingBoxes.isEmpty() || imageWidth == 1 || imageHeight == 1) {
+            return
+        }
 
         // PreviewView defaults to FILL_CENTER. We compute the scale factor to fill the view.
         val scaleX = viewWidth / imageWidth.toFloat()
