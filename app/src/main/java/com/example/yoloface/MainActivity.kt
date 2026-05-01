@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         lensFacing = prefs.getInt(KEY_LENS_FACING, CameraSelector.LENS_FACING_FRONT)
 
         savedInstanceState?.let {
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 CameraSelector.LENS_FACING_FRONT
             }
-            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .edit {
                     putInt(KEY_LENS_FACING, lensFacing)
                 }
