@@ -87,7 +87,7 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             
             val confText = String.format(Locale.KOREAN,"%d", (conf * 100).toInt())
             canvas.drawText("Face", mappedBox.left, mappedBox.top - 10f, objectTypeTextPaint)
-            canvas.drawText("$confText", mappedBox.left, mappedBox.top - 50f, objectConfidenceTextPaint)
+            canvas.drawText(confText, mappedBox.left, mappedBox.top - 50f, objectConfidenceTextPaint)
         }
     }
 }
