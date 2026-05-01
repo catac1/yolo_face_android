@@ -22,10 +22,6 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
 
     buildFeatures {
         viewBinding = true
@@ -39,7 +35,7 @@ android {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_1_8)
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
@@ -59,12 +55,12 @@ dependencies {
     implementation("androidx.camera:camera-view:${cameraxVersion}")
 
     // TensorFlow Lite
-//    implementation("org.tensorflow:tensorflow-lite:2.17.0")
-//    implementation("org.tensorflow:tensorflow-lite-support:0.5.0")
-
-//    implementation("com.google.ai.edge.litert:litert:2.1.4")
-//    implementation("com.google.ai.edge.litert:litert-api:1.4.2")
     implementation("com.google.ai.edge.litert:litert-support:1.4.2")
     implementation("com.google.ai.edge.litert:litert-metadata:1.4.2")
+}
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
