@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
+import java.util.Locale
 import kotlin.math.max
 
 class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
@@ -84,7 +85,7 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
 
             canvas.drawRect(mappedBox, paint)
             
-            val confText = String.format("%d", (conf * 100).toInt())
+            val confText = String.format(Locale.KOREAN,"%d", (conf * 100).toInt())
             canvas.drawText("Face", mappedBox.left, mappedBox.top - 10f, objectTypeTextPaint)
             canvas.drawText("$confText", mappedBox.left, mappedBox.top - 50f, objectConfidenceTextPaint)
         }
