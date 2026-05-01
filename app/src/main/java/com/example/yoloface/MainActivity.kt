@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
             val preview = Preview.Builder()
                 .build()
                 .also {
-                    it.setSurfaceProvider(binding.previewView.surfaceProvider)
+                    it.surfaceProvider = binding.previewView.surfaceProvider
                 }
 
             val imageAnalyzer = ImageAnalysis.Builder()
