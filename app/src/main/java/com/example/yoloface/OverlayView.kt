@@ -49,6 +49,8 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         invalidate()
     }
 
+    var mappedBox = RectF()
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
@@ -81,7 +83,10 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             val mappedRight = box.right * scale + offsetX
             val mappedBottom = box.bottom * scale + offsetY
 
-            val mappedBox = RectF(mappedLeft, mappedTop, mappedRight, mappedBottom)
+            mappedBox.left = mappedLeft
+            mappedBox.top = mappedTop
+            mappedBox.right = mappedRight
+            mappedBox.bottom = mappedBottom
 
             canvas.drawRect(mappedBox, paint)
             
