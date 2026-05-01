@@ -24,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
     private var faceDetector: YoloFaceDetector? = null
+    private var lensFacing = CameraSelector.LENS_FACING_FRONT
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -41,6 +42,15 @@ class MainActivity : AppCompatActivity() {
         Thread {
             faceDetector = YoloFaceDetector(this, "yolo26n-face_float16.tflite")
         }.start()
+
+        binding.btnSwitchCamera.setOnClickListener {
+            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                CameraSelector.LENS_FACING_BACK
+            } else {
+                CameraSelector.LENS_FACING_FRONT
+            }
+            startCamera()
+        }
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -72,8 +82,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-            // Using front camera as requested by the user
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+            // Using selected camera lens
+            val cameraSelector = CameraSelector.Builder()
+                .requireLensFacing(lensFacing)
+                .build()
 
             try {
                 cameraProvider.unbindAll()
@@ -98,8 +110,11 @@ class MainActivity : AppCompatActivity() {
         // Adjust for rotation and front camera mirroring
         val matrix = Matrix()
         matrix.postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-        // Front camera is mirrored
-        matrix.postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
+        
+        if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+            // Front camera is mirrored
+            matrix.postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
+        }
 
         val rotatedBitmap = Bitmap.createBitmap(
             bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true

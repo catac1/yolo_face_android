@@ -17,4 +17,16 @@
         android:layout_height="match_parent"
         android:background="@android:color/transparent" />
 
+    <ImageButton
+        android:id="@+id/btnSwitchCamera"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="32dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Switch Camera"
+        android:scaleType="centerInside"
+        android:src="@android:drawable/ic_menu_revert"
+        android:tint="@android:color/white" />
+
 </FrameLayout>
