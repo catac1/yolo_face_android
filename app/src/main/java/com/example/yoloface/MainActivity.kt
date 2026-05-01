@@ -1,6 +1,7 @@
 package com.example.yoloface
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -30,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
         private const val KEY_LENS_FACING = "key_lens_facing"
+        private const val PREFS_NAME = "yolo_prefs"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,8 +39,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        lensFacing = prefs.getInt(KEY_LENS_FACING, CameraSelector.LENS_FACING_FRONT)
+
         savedInstanceState?.let {
-            lensFacing = it.getInt(KEY_LENS_FACING, CameraSelector.LENS_FACING_FRONT)
+            lensFacing = it.getInt(KEY_LENS_FACING, lensFacing)
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -54,6 +59,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 CameraSelector.LENS_FACING_FRONT
             }
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putInt(KEY_LENS_FACING, lensFacing)
+                .apply()
             startCamera()
         }
 
