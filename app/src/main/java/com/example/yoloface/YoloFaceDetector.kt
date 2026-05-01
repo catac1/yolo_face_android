@@ -57,63 +57,35 @@ class YoloFaceDetector(context: Context, modelName: String) {
         val results = mutableListOf<FaceBox>()
 
         try {
-            // Standard YOLOv8 TFLite export is often [1, num_boxes, num_attributes] e.g., [1, 8400, 5]
-            if (outputShape.size == 3 && outputShape[1] > outputShape[2]) {
-                val numBoxes = outputShape[1]
-                val numAttributes = outputShape[2]
-                val outputBuffer = Array(1) { Array(numBoxes) { FloatArray(numAttributes) } }
 
-                currentInterpreter.run(tensorImage.buffer, outputBuffer)
-                
-                val outputs = outputBuffer[0]
-                for (i in 0 until numBoxes) {
-                    val conf = outputs[i][4] // Assuming index 4 is confidence
-                    if (conf > 0.5f) {
-                        val xmin = outputs[i][0]
-                        val ymin = outputs[i][1]
-                        val xmax = outputs[i][2]
-                        val ymax = outputs[i][3]
-                        
-                        val left = xmin
-                        val top = ymin
-                        val right = xmax
-                        val bottom = ymax
-                        
-                        val scaleX = bitmap.width.toFloat()
-                        val scaleY = bitmap.height.toFloat()
-                        
-                        val rect = RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY)
-                        results.add(FaceBox(rect, conf))
-                    }
-                }
-            } else if (outputShape.size == 3) {
-                // Original PyTorch shape: [1, num_attributes, num_boxes] e.g., [1, 5, 8400]
-                val numAttributes = outputShape[1]
-                val numBoxes = outputShape[2]
-                val outputBuffer = Array(1) { Array(numAttributes) { FloatArray(numBoxes) } }
+            /*
+             * NOTE:
+             *    Standard YOLOv8 TFLite export is often [1, num_boxes, num_attributes] e.g., [1, 8400, 5]
+             *    Original PyTorch shape:                [1, num_attributes, num_boxes] e.g., [1, 5, 8400]
+             *
+             *   This app uses TFLite model.
+             *
+             */
 
-                currentInterpreter.run(tensorImage.buffer, outputBuffer)
-                
-                val outputs = outputBuffer[0]
-                for (i in 0 until numBoxes) {
-                    val conf = outputs[4][i] // Assuming index 4 is confidence
-                    if (conf > 0.5f) {
-                        val xmin = outputs[0][i]
-                        val ymin = outputs[1][i]
-                        val xmax = outputs[2][i]
-                        val ymax = outputs[3][i]
-                        
-                        val left = xmin
-                        val top = ymin
-                        val right = xmax
-                        val bottom = ymax
-                        
-                        val scaleX = bitmap.width.toFloat()
-                        val scaleY = bitmap.height.toFloat()
-                        
-                        val rect = RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY)
-                        results.add(FaceBox(rect, conf))
-                    }
+            val numBoxes = outputShape[1]
+            val numAttributes = outputShape[2]
+            val outputBuffer = Array(1) { Array(numBoxes) { FloatArray(numAttributes) } }
+
+            currentInterpreter.run(tensorImage.buffer, outputBuffer)
+
+            val outputs = outputBuffer[0]
+            for (i in 0 until numBoxes) {
+                val conf = outputs[i][4] // Assuming index 4 is confidence
+                if (conf > 0.5f) {
+                    val scaleX = bitmap.width.toFloat()
+                    val scaleY = bitmap.height.toFloat()
+                    val rect = RectF(
+                        outputs[i][0] * scaleX,
+                        outputs[i][1] * scaleY,
+                        outputs[i][2] * scaleX,
+                        outputs[i][3] * scaleY,
+                    )
+                    results.add(FaceBox(rect, conf))
                 }
             }
         } catch (e: Exception) {
