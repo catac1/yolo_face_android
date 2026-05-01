@@ -29,12 +29,17 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        private const val KEY_LENS_FACING = "key_lens_facing"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        savedInstanceState?.let {
+            lensFacing = it.getInt(KEY_LENS_FACING, CameraSelector.LENS_FACING_FRONT)
+        }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
         
@@ -152,6 +157,11 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_LENS_FACING, lensFacing)
     }
 
     override fun onDestroy() {
