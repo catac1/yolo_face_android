@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import com.example.yoloface.databinding.ActivityMainBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import androidx.core.content.edit
 
 class MainActivity : AppCompatActivity() {
 
@@ -60,9 +61,9 @@ class MainActivity : AppCompatActivity() {
                 CameraSelector.LENS_FACING_FRONT
             }
             getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putInt(KEY_LENS_FACING, lensFacing)
-                .apply()
+                .edit {
+                    putInt(KEY_LENS_FACING, lensFacing)
+                }
             startCamera()
         }
 
