@@ -4,134 +4,118 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.util.Log
-import org.pytorch.IValue
-import org.pytorch.Module
-import org.pytorch.Tensor
-import org.pytorch.torchvision.TensorImageUtils
-import java.io.File
-import java.io.FileOutputStream
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.common.ops.NormalizeOp
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
 class YoloFaceDetector(context: Context, modelName: String) {
-    private var module: Module? = null
+    private var interpreter: Interpreter? = null
 
     init {
-        val assetPath = assetFilePath(context, modelName)
-        if (File(assetPath).exists()) {
-            try {
-                module = Module.load(assetPath)
-            } catch (e: Exception) {
-                Log.e("YoloFaceDetector", "Error loading model", e)
+        try {
+            val model = loadModelFile(context, modelName)
+            val options = Interpreter.Options().apply {
+                numThreads = 4
             }
-        } else {
-            Log.e("YoloFaceDetector", "Model file not found in assets")
+            interpreter = Interpreter(model, options)
+        } catch (e: Exception) {
+            Log.e("YoloFaceDetector", "Error loading model", e)
         }
     }
 
+    private fun loadModelFile(context: Context, modelName: String): MappedByteBuffer {
+        val fileDescriptor = context.assets.openFd(modelName)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+    }
+
     fun detect(bitmap: Bitmap): List<RectF> {
-        val currentModule = module ?: return emptyList()
+        val currentInterpreter = interpreter ?: return emptyList()
 
-        val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 640, 640, true)
-        
-        // Prepare input tensor (YOLO expects RGB float32 0-1)
-        val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(
-            resizedBitmap,
-            floatArrayOf(0.0f, 0.0f, 0.0f),
-            floatArrayOf(1.0f, 1.0f, 1.0f)
-        )
+        // Setup image processor for YOLO: resize to 640x640, normalize to 0-1
+        val imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(640, 640, ResizeOp.ResizeMethod.BILINEAR))
+            .add(NormalizeOp(0.0f, 255.0f))
+            .build()
 
+        var tensorImage = TensorImage(org.tensorflow.lite.DataType.FLOAT32)
+        tensorImage.load(bitmap)
+        tensorImage = imageProcessor.process(tensorImage)
+
+        // Acquire output shape dynamically
+        val outputShape = currentInterpreter.getOutputTensor(0).shape()
         val results = mutableListOf<RectF>()
-        try {
-            // Run inference
-            val outputIValue = currentModule.forward(IValue.from(inputTensor))
-            
-            // Output might be a tuple or a single tensor
-            val outputTensor = if (outputIValue.isTuple) {
-                outputIValue.toTuple()[0].toTensor()
-            } else {
-                outputIValue.toTensor()
-            }
-            
-            val outputs = outputTensor.dataAsFloatArray
-            val shape = outputTensor.shape()
 
-            // Standard YOLO output: [1, num_classes + 4, num_anchors]
-            if (shape.size >= 3) {
-                val numAttributes = shape[1].toInt()
-                val numBoxes = shape[2].toInt()
+        try {
+            // Standard YOLOv8 TFLite export is often [1, num_boxes, num_attributes] e.g., [1, 8400, 5]
+            if (outputShape.size == 3 && outputShape[1] > outputShape[2]) {
+                val numBoxes = outputShape[1]
+                val numAttributes = outputShape[2]
+                val outputBuffer = Array(1) { Array(numBoxes) { FloatArray(numAttributes) } }
+
+                currentInterpreter.run(tensorImage.buffer, outputBuffer)
                 
+                val outputs = outputBuffer[0]
                 for (i in 0 until numBoxes) {
-                    val conf = outputs[4 * numBoxes + i] // index 4 is objectness/confidence
-                    
+                    val conf = outputs[i][4] // Assuming index 4 is confidence
                     if (conf > 0.5f) {
-                        val cx = outputs[0 * numBoxes + i]
-                        val cy = outputs[1 * numBoxes + i]
-                        val w = outputs[2 * numBoxes + i]
-                        val h = outputs[3 * numBoxes + i]
+                        val cx = outputs[i][0]
+                        val cy = outputs[i][1]
+                        val w = outputs[i][2]
+                        val h = outputs[i][3]
                         
                         val left = cx - w / 2
                         val top = cy - h / 2
                         val right = cx + w / 2
                         val bottom = cy + h / 2
                         
-                        // Scale back to original bitmap size
                         val scaleX = bitmap.width / 640f
                         val scaleY = bitmap.height / 640f
                         
                         results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
                     }
                 }
-            } else if (shape.size == 2) {
-                 // Alternate parsing if output is [num_boxes, 6]
-                 val numBoxes = shape[0].toInt()
-                 val numAttributes = shape[1].toInt()
-                 for (i in 0 until numBoxes) {
-                     val baseIdx = i * numAttributes
-                     val conf = outputs[baseIdx + 4]
-                     if (conf > 0.5f) {
-                         val cx = outputs[baseIdx + 0]
-                         val cy = outputs[baseIdx + 1]
-                         val w = outputs[baseIdx + 2]
-                         val h = outputs[baseIdx + 3]
-                         
-                         val left = cx - w / 2
-                         val top = cy - h / 2
-                         val right = cx + w / 2
-                         val bottom = cy + h / 2
-                         
-                         val scaleX = bitmap.width / 640f
-                         val scaleY = bitmap.height / 640f
-                         
-                         results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
-                     }
-                 }
+            } else if (outputShape.size == 3) {
+                // Original PyTorch shape: [1, num_attributes, num_boxes] e.g., [1, 5, 8400]
+                val numAttributes = outputShape[1]
+                val numBoxes = outputShape[2]
+                val outputBuffer = Array(1) { Array(numAttributes) { FloatArray(numBoxes) } }
+
+                currentInterpreter.run(tensorImage.buffer, outputBuffer)
+                
+                val outputs = outputBuffer[0]
+                for (i in 0 until numBoxes) {
+                    val conf = outputs[4][i] // Assuming index 4 is confidence
+                    if (conf > 0.5f) {
+                        val cx = outputs[0][i]
+                        val cy = outputs[1][i]
+                        val w = outputs[2][i]
+                        val h = outputs[3][i]
+                        
+                        val left = cx - w / 2
+                        val top = cy - h / 2
+                        val right = cx + w / 2
+                        val bottom = cy + h / 2
+                        
+                        val scaleX = bitmap.width / 640f
+                        val scaleY = bitmap.height / 640f
+                        
+                        results.add(RectF(left * scaleX, top * scaleY, right * scaleX, bottom * scaleY))
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e("YoloFaceDetector", "Inference error", e)
         }
         
         return results
-    }
-
-    private fun assetFilePath(context: Context, assetName: String): String {
-        val file = File(context.filesDir, assetName)
-        if (file.exists() && file.length() > 0) {
-            return file.absolutePath
-        }
-        try {
-            context.assets.open(assetName).use { `is` ->
-                FileOutputStream(file).use { os ->
-                    val buffer = ByteArray(4 * 1024)
-                    var read: Int
-                    while (`is`.read(buffer).also { read = it } != -1) {
-                        os.write(buffer, 0, read)
-                    }
-                    os.flush()
-                }
-                return file.absolutePath
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return file.absolutePath
-        }
     }
 }

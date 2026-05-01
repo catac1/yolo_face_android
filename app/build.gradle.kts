@@ -31,6 +31,9 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    androidResources {
+        noCompress.add("tflite")
+    }
 }
 
 dependencies {
@@ -46,7 +49,7 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:${camerax_version}")
     implementation("androidx.camera:camera-view:${camerax_version}")
 
-    // PyTorch Mobile
-    implementation("org.pytorch:pytorch_android:1.13.0")
-    implementation("org.pytorch:pytorch_android_torchvision:1.13.0")
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 }
