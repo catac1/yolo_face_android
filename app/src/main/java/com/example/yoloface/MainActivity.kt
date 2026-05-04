@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         
         // Initialize YOLO detector
         Thread {
-            faceDetector = YoloFaceDetector(this, "yolo26n-face_float16.tflite")
+            faceDetector = YoloFaceDetector(this, "yolo26n-face_float16_from-macos.tflite")
         }.start()
 
         binding.btnSwitchCamera.setOnClickListener {
