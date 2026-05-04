@@ -29,6 +29,11 @@ android {
     androidResources {
         noCompress.add("tflite")
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
     ndkVersion = "21.3.6528147"
     buildToolsVersion = "36.0.0"
 }
@@ -57,6 +62,11 @@ dependencies {
     // TensorFlow Lite
     implementation("com.google.ai.edge.litert:litert-support:1.4.2")
     implementation("com.google.ai.edge.litert:litert-metadata:1.4.2")
+
+    // Unit tests
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
 }
 
 java {

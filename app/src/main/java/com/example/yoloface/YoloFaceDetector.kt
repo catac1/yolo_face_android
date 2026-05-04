@@ -15,10 +15,10 @@ import java.nio.channels.FileChannel
 
 data class FaceBox(val bounds: RectF, val confidence: Float)
 
-class YoloFaceDetector(context: Context, modelName: String) {
-    private var interpreter: Interpreter? = null
+class YoloFaceDetector {
+    internal var interpreter: Interpreter? = null
 
-    init {
+    constructor(context: Context, modelName: String) {
         try {
             val model = loadModelFile(context, modelName)
             val options = Interpreter.Options().apply {
@@ -28,6 +28,10 @@ class YoloFaceDetector(context: Context, modelName: String) {
         } catch (e: Exception) {
             Log.e("YoloFaceDetector", "Error loading model", e)
         }
+    }
+
+    internal constructor(interpreter: Interpreter?) {
+        this.interpreter = interpreter
     }
 
     private fun loadModelFile(context: Context, modelName: String): MappedByteBuffer {
@@ -54,7 +58,6 @@ class YoloFaceDetector(context: Context, modelName: String) {
 
         // Acquire output shape dynamically
         val outputShape = currentInterpreter.getOutputTensor(0).shape()
-        val results = mutableListOf<FaceBox>()
 
         try {
 
@@ -73,25 +76,36 @@ class YoloFaceDetector(context: Context, modelName: String) {
 
             currentInterpreter.run(tensorImage.buffer, outputBuffer)
 
-            val outputs = outputBuffer[0]
-            for (i in 0 until numBoxes) {
-                val conf = outputs[i][4] // Assuming index 4 is confidence
-                if (conf > 0.5f) {
-                    val scaleX = bitmap.width.toFloat()
-                    val scaleY = bitmap.height.toFloat()
-                    val rect = RectF(
-                        outputs[i][0] * scaleX,
-                        outputs[i][1] * scaleY,
-                        outputs[i][2] * scaleX,
-                        outputs[i][3] * scaleY,
-                    )
-                    results.add(FaceBox(rect, conf))
-                }
-            }
+            return parseOutputs(outputBuffer[0], bitmap.width.toFloat(), bitmap.height.toFloat())
         } catch (e: Exception) {
             Log.e("YoloFaceDetector", "Inference error", e)
         }
-        
+
+        return emptyList()
+    }
+
+    internal fun parseOutputs(
+        outputs: Array<FloatArray>,
+        imageWidth: Float,
+        imageHeight: Float
+    ): List<FaceBox> {
+        val results = mutableListOf<FaceBox>()
+        for (row in outputs) {
+            val conf = row[4]
+            if (conf > 0.5f) {
+                results.add(
+                    FaceBox(
+                        RectF(
+                            row[0] * imageWidth,
+                            row[1] * imageHeight,
+                            row[2] * imageWidth,
+                            row[3] * imageHeight,
+                        ),
+                        conf,
+                    )
+                )
+            }
+        }
         return results
     }
 }
