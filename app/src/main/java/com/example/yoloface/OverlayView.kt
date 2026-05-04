@@ -18,12 +18,12 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
     private val paint = Paint().apply {
         color = Color.GREEN
         style = Paint.Style.STROKE
-        strokeWidth = 8f
+        strokeWidth = 4f
     }
     
     private val objectTypeTextPaint = Paint().apply {
         color = Color.GREEN
-        textSize = 50f
+        textSize = 30f
         style = Paint.Style.FILL
     }
 
