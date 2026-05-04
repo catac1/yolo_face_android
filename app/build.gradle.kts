@@ -4,6 +4,8 @@ plugins {
     id("com.android.application")
 }
 
+val mockitoAgent: Configuration by configurations.creating
+
 android {
     namespace = "com.example.yoloface"
     compileSdk = 36
@@ -32,6 +34,9 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all { test ->
+                test.jvmArgs("-javaagent:${mockitoAgent.asPath}")
+            }
         }
     }
     ndkVersion = "21.3.6528147"
@@ -67,6 +72,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
+    mockitoAgent("org.mockito:mockito-core:5.23.0") { isTransitive = false }
 }
 
 java {
