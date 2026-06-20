@@ -7,7 +7,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
-import java.util.Locale
+import kotlin.math.absoluteValue
 import kotlin.math.max
 
 class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
@@ -16,33 +16,26 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
     }
 
     private val paint = Paint().apply {
-        color = Color.GREEN
         style = Paint.Style.STROKE
         strokeWidth = 4f
     }
     
     private val objectTypeTextPaint = Paint().apply {
-        color = Color.GREEN
         textSize = 30f
         style = Paint.Style.FILL
     }
 
-    private val objectConfidenceTextPaint = Paint().apply {
-        color = Color.MAGENTA
-        textSize = 30f
-        style = Paint.Style.FILL
-    }
     private val borderPaint = Paint().apply {
         color = Color.RED
         style = Paint.Style.STROKE
         strokeWidth = 10f
     }
 
-    private var boundingBoxes: List<FaceBox> = emptyList()
+    private var boundingBoxes: List<DetectionBox> = emptyList()
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
 
-    fun setResults(boxes: List<FaceBox>, imgWidth: Int, imgHeight: Int) {
+    fun setResults(boxes: List<DetectionBox>, imgWidth: Int, imgHeight: Int) {
         this.boundingBoxes = boxes
         this.imageWidth = imgWidth
         this.imageHeight = imgHeight
@@ -76,20 +69,28 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         val offsetX = (viewWidth - scaledWidth) / 2f
         val offsetY = (viewHeight - scaledHeight) / 2f
 
-        for (faceBox in boundingBoxes) {
-            val box = faceBox.bounds
-            val conf = faceBox.confidence
+        for (detection in boundingBoxes) {
+            val box = detection.bounds
             // Map box coordinates from image space to view space
             mappedBox.left = (box.left * scale) + offsetX
             mappedBox.top = (box.top * scale) + offsetY
             mappedBox.right = (box.right * scale) + offsetX
             mappedBox.bottom = (box.bottom * scale) + offsetY
 
+            val color = colorForDetection(detection)
+            paint.color = color
+            objectTypeTextPaint.color = color
             canvas.drawRect(mappedBox, paint)
-            
-            val confText = String.format(Locale.KOREAN,"%d", (conf * 100).toInt())
-            canvas.drawText("Face", mappedBox.left, mappedBox.top - 10f, objectTypeTextPaint)
-            canvas.drawText(confText, mappedBox.left, mappedBox.top - 50f, objectConfidenceTextPaint)
+            val prefix = if (detection.stage == DetectionStage.PILL) "Pill" else "Text"
+            val text = "$prefix: ${detection.label} ${(detection.confidence * 100).toInt()}%"
+            canvas.drawText(text, mappedBox.left, (mappedBox.top - 10f).coerceAtLeast(32f), objectTypeTextPaint)
         }
+    }
+
+    private fun colorForDetection(detection: DetectionBox): Int {
+        if (detection.stage == DetectionStage.PILL) return Color.CYAN
+        val classId = detection.classId
+        val hue = ((classId * 137).absoluteValue % 360).toFloat()
+        return Color.HSVToColor(floatArrayOf(hue, 0.85f, 1f))
     }
 }

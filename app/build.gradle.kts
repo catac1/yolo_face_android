@@ -67,6 +67,8 @@ dependencies {
     // TensorFlow Lite
     implementation("com.google.ai.edge.litert:litert-support:1.4.2")
     implementation("com.google.ai.edge.litert:litert-metadata:1.4.2")
+    implementation("com.google.ai.edge.litert:litert-gpu:1.4.2")
+    implementation("com.google.ai.edge.litert:litert-gpu-api:1.4.2")
 
     // Unit tests
     testImplementation("junit:junit:4.13.2")
