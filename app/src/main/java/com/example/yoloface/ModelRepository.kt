@@ -20,15 +20,15 @@ class ModelRepository(private val context: Context) {
             val array = JSONArray(preferences.getString(KEY_IMPORTED_MODELS, "[]"))
             List(array.length()) { ModelConfig.fromJson(array.getJSONObject(it)) }
         }.getOrDefault(emptyList())
-        return bundledModels + imported
+        return imported
     }
 
     fun getModel(id: String): ModelConfig? = getModels().firstOrNull { it.id == id }
 
-    fun getSelectedModel(): ModelConfig {
+    fun getSelectedModel(): ModelConfig? {
         val models = getModels()
         val selectedId = preferences.getString(KEY_TEXT_MODEL, preferences.getString(KEY_SELECTED_MODEL, null))
-        return models.firstOrNull { it.id == selectedId } ?: models.first()
+        return models.firstOrNull { it.id == selectedId } ?: models.firstOrNull()
     }
 
     fun getPillModel(): ModelConfig? = preferences.getString(KEY_PILL_MODEL, null)?.let(::getModel)
@@ -133,20 +133,14 @@ class ModelRepository(private val context: Context) {
     }
 
     fun updateModel(updated: ModelConfig) {
-        val existing = getModel(updated.id) ?: error("Model no longer exists")
-        if (existing.isBundled) {
-            val overrides = getOverrides().toMutableMap().apply { put(updated.id, updated) }
-            preferences.edit { putString(KEY_BUNDLED_OVERRIDES, encode(overrides.values.toList())) }
-        } else {
-            saveImported(getModels().filterNot { it.isBundled }.map { if (it.id == updated.id) updated else it })
-        }
+        getModel(updated.id) ?: error("Model no longer exists")
+        saveImported(getModels().map { if (it.id == updated.id) updated else it })
     }
 
     fun deleteModel(id: String) {
         val model = getModel(id) ?: return
-        require(!model.isBundled) { "Bundled models cannot be deleted" }
         File(model.modelLocation).parentFile?.deleteRecursively()
-        val remaining = getModels().filterNot { it.isBundled || it.id == id }
+        val remaining = getModels().filterNot { it.id == id }
         saveImported(remaining)
         preferences.edit {
             if (preferences.getString(KEY_PILL_MODEL, null) == id) remove(KEY_PILL_MODEL)
@@ -161,41 +155,14 @@ class ModelRepository(private val context: Context) {
 
     private fun encode(models: List<ModelConfig>) = JSONArray().apply { models.forEach { put(it.toJson()) } }.toString()
 
-    private fun getOverrides(): Map<String, ModelConfig> = runCatching {
-        val array = JSONArray(preferences.getString(KEY_BUNDLED_OVERRIDES, "[]"))
-        List(array.length()) { ModelConfig.fromJson(array.getJSONObject(it)) }.associateBy { it.id }
-    }.getOrDefault(emptyMap())
-
-    private val bundledModels: List<ModelConfig>
-        get() {
-            val overrides = getOverrides()
-            return BUNDLED.map { overrides[it.id] ?: it }
-        }
-
     companion object {
         private const val PREFS_NAME = "model_catalog"
         private const val KEY_IMPORTED_MODELS = "imported_models"
-        private const val KEY_BUNDLED_OVERRIDES = "bundled_overrides"
         private const val KEY_SELECTED_MODEL = "selected_model"
         private const val KEY_PILL_MODEL = "pill_model"
         private const val KEY_TEXT_MODEL = "text_model"
         private const val KEY_DETECTION_MODE = "detection_mode"
         private const val MAX_LABEL_FILE_BYTES = 256 * 1024
         private const val MAX_LABEL_COUNT = 10_000
-
-        private val BUNDLED = listOf(
-            "yolo26n-face_float16_from-macos.tflite",
-            "yolo26n-face_float16_from-colab.tflite",
-            "yolo26n-face_float32_from-macos.tflite",
-            "yolo26n-face_float32_from-colab.tflite",
-        ).map { fileName ->
-            ModelConfig(
-                id = "asset:$fileName",
-                displayName = fileName.removeSuffix(".tflite"),
-                source = ModelSource.ASSET,
-                modelLocation = fileName,
-                labels = listOf("Face"),
-            )
-        }
     }
 }

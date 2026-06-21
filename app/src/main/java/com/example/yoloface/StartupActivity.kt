@@ -114,7 +114,9 @@ class StartupActivity : AppCompatActivity() {
 
     private fun refreshModels() {
         models = repository.getModels()
-        if (selectedId == null || models.none { it.id == selectedId }) selectedId = repository.getTextModel()?.id ?: models.first().id
+        if (selectedId == null || models.none { it.id == selectedId }) {
+            selectedId = repository.getTextModel()?.id ?: models.firstOrNull()?.id
+        }
         val pillModel = repository.getPillModel()
         val textModel = repository.getTextModel()
         val rows = models.map { model ->
