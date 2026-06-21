@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var detectionMode: DetectionMode
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var activeCamera: Camera? = null
+    private val fpsCounter = FpsCounter()
+    private var lastFpsUiUpdateNs = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -227,8 +229,17 @@ class MainActivity : AppCompatActivity() {
         } catch (error: Exception) {
             Log.e(TAG, "Inference failed", error)
         } finally {
+            updateFps()
             imageProxy.close()
         }
+    }
+
+    private fun updateFps() {
+        val now = System.nanoTime()
+        val fps = fpsCounter.recordFrame(now) ?: return
+        if (now - lastFpsUiUpdateNs < FPS_UI_UPDATE_INTERVAL_NS) return
+        lastFpsUiUpdateNs = now
+        runOnUiThread { binding.fpsStatus.text = getString(R.string.fps_value, fps) }
     }
 
     private fun detectTextInPill(
@@ -308,5 +319,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG = "YoloDetection"
         private const val MAX_PILL_CROPS_PER_FRAME = 5
         private const val CROP_PADDING_RATIO = 0.05f
+        private const val FPS_UI_UPDATE_INTERVAL_NS = 250_000_000L
     }
 }

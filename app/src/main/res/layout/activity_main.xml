@@ -39,6 +39,17 @@
         android:textColor="@android:color/white"
         android:visibility="gone" />
 
+    <TextView
+        android:id="@+id/fpsStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="#99000000"
+        android:padding="8dp"
+        android:text="@string/fps_waiting"
+        android:textColor="@android:color/white" />
+
     <ImageButton
         android:id="@+id/btnSwitchCamera"
         android:layout_width="56dp"

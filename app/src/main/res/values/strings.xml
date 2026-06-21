@@ -43,4 +43,6 @@
     <string name="select_required_models">Assign the model required by the selected detection mode.</string>
     <string name="blur_threshold">Minimum sharpness (0 disables; try 50–150)</string>
     <string name="image_too_blurry">Too blurry: %1$.1f &lt; %2$.1f</string>
+    <string name="fps_waiting">FPS: --</string>
+    <string name="fps_value">FPS: %1$.1f</string>
 </resources>
