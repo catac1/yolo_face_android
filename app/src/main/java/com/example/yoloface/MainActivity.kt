@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -200,6 +201,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             val transformed = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (!passesBlurGate(transformed, primaryModel(), showStatus = true)) {
+                runOnUiThread {
+                    binding.overlayView.setResults(emptyList(), transformed.width, transformed.height)
+                }
+                return
+            }
             val results = when (detectionMode) {
                 DetectionMode.PILL_ONLY -> pillDetector?.detect(transformed, DetectionStage.PILL) ?: return
                 DetectionMode.IMPRINT_ONLY -> textDetector?.detect(transformed, DetectionStage.TEXT) ?: return
@@ -237,6 +244,7 @@ class MainActivity : AppCompatActivity() {
         val bottom = (pill.bounds.bottom + paddingY).toInt().coerceIn(top + 1, frame.height)
         val crop = Bitmap.createBitmap(frame, left, top, right - left, bottom - top)
         return try {
+            if (!passesBlurGate(crop, detector.config, showStatus = false)) return emptyList()
             detector.detect(crop, DetectionStage.TEXT).map { detection ->
                 detection.copy(bounds = RectF(
                     detection.bounds.left + left,
@@ -248,6 +256,24 @@ class MainActivity : AppCompatActivity() {
         } finally {
             crop.recycle()
         }
+    }
+
+    private fun passesBlurGate(bitmap: Bitmap, model: ModelConfig, showStatus: Boolean): Boolean {
+        if (model.blurThreshold <= 0f) {
+            if (showStatus) runOnUiThread { binding.qualityStatus.visibility = View.GONE }
+            return true
+        }
+        val score = BlurDetector.score(bitmap)
+        val passes = score >= model.blurThreshold
+        if (showStatus) {
+            runOnUiThread {
+                binding.qualityStatus.visibility = if (passes) View.GONE else View.VISIBLE
+                if (!passes) {
+                    binding.qualityStatus.text = getString(R.string.image_too_blurry, score, model.blurThreshold)
+                }
+            }
+        }
+        return passes
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

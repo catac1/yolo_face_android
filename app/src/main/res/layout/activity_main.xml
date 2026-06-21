@@ -28,6 +28,17 @@
         android:text="@string/model_loading"
         android:textColor="@android:color/white" />
 
+    <TextView
+        android:id="@+id/qualityStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="72dp"
+        android:background="#CC8B0000"
+        android:padding="8dp"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
     <ImageButton
         android:id="@+id/btnSwitchCamera"
         android:layout_width="56dp"

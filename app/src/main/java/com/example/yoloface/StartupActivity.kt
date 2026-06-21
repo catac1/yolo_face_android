@@ -195,6 +195,7 @@ class StartupActivity : AppCompatActivity() {
         val iou = view.findViewById<EditText>(R.id.iouInput).apply { setText(model.iouThreshold.toString()) }
         val threads = view.findViewById<EditText>(R.id.threadsInput).apply { setText(model.threadCount.toString()) }
         val exposure = view.findViewById<EditText>(R.id.exposureInput).apply { setText(model.exposureCompensation.toString()) }
+        val blurThreshold = view.findViewById<EditText>(R.id.blurThresholdInput).apply { setText(model.blurThreshold.toString()) }
         val camera = view.findViewById<Spinner>(R.id.cameraSpinner).apply {
             adapter = ArrayAdapter(this@StartupActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Back camera", "Front camera"))
             setSelection(if (model.lensFacing == CameraSelector.LENS_FACING_FRONT) 1 else 0)
@@ -216,9 +217,11 @@ class StartupActivity : AppCompatActivity() {
                 val iouValue = iou.text.toString().toFloatOrNull()
                 val threadValue = threads.text.toString().toIntOrNull()
                 val exposureValue = exposure.text.toString().toIntOrNull()
+                val blurThresholdValue = blurThreshold.text.toString().toFloatOrNull()
                 if (name.text.isBlank() || confidenceValue == null || confidenceValue !in 0f..1f ||
                     iouValue == null || iouValue !in 0f..1f || threadValue == null || threadValue !in 1..8 ||
-                    exposureValue == null || exposureValue !in -20..20) {
+                    exposureValue == null || exposureValue !in -20..20 ||
+                    blurThresholdValue == null || blurThresholdValue !in 0f..10_000f) {
                     Toast.makeText(this, R.string.invalid_settings, Toast.LENGTH_LONG).show()
                     return@setOnClickListener
                 }
@@ -229,6 +232,7 @@ class StartupActivity : AppCompatActivity() {
                     threadCount = threadValue,
                     lensFacing = if (camera.selectedItemPosition == 1) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK,
                     exposureCompensation = exposureValue,
+                    blurThreshold = blurThresholdValue,
                     backend = ExecutionBackend.entries[backend.selectedItemPosition],
                 ))
                 dialog.dismiss()

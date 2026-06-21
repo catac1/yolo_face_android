@@ -16,7 +16,7 @@
     <string name="camera">Camera</string>
     <string name="execution_backend">Execution backend</string>
     <string name="save">Save</string>
-    <string name="invalid_settings">Enter a name, thresholds from 0 to 1, 1 to 8 threads, and exposure from -20 to 20.</string>
+    <string name="invalid_settings">Enter a name, detection thresholds from 0 to 1, 1 to 8 threads, exposure from -20 to 20, and blur threshold from 0 to 10000.</string>
     <string name="delete_model">Delete model?</string>
     <string name="delete_model_message">Delete %1$s and its stored files?</string>
     <string name="model_loading">Loading model…</string>
@@ -41,4 +41,6 @@
     <string name="two_stage_mode">Both: pill box then imprint</string>
     <string name="single_pipeline_active">Model: %1$s</string>
     <string name="select_required_models">Assign the model required by the selected detection mode.</string>
+    <string name="blur_threshold">Minimum sharpness (0 disables; try 50–150)</string>
+    <string name="image_too_blurry">Too blurry: %1$.1f &lt; %2$.1f</string>
 </resources>
