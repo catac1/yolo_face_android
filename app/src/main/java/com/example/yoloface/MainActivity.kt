@@ -7,10 +7,13 @@ import android.graphics.Matrix
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.Camera
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -20,6 +23,7 @@ import androidx.core.content.ContextCompat
 import com.example.yoloface.databinding.ActivityMainBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -29,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pillModel: ModelConfig
     private lateinit var textModel: ModelConfig
     private var lensFacing = CameraSelector.LENS_FACING_BACK
+    private var activeCamera: Camera? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +59,14 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor = Executors.newSingleThreadExecutor()
         binding.modelStatus.text = getString(R.string.model_loading)
         initializeDetector()
+
+        binding.previewView.setOnTouchListener { view, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                view.performClick()
+                focusAt(event.x, event.y)
+            }
+            true
+        }
 
         binding.btnSwitchCamera.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
@@ -126,12 +139,33 @@ class MainActivity : AppCompatActivity() {
             val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, selector, preview, imageAnalyzer)
+                val camera = cameraProvider.bindToLifecycle(this, selector, preview, imageAnalyzer)
+                activeCamera = camera
+                val exposureRange = camera.cameraInfo.exposureState.exposureCompensationRange
+                if (exposureRange.lower <= exposureRange.upper) {
+                    val appliedExposure = pillModel.exposureCompensation.coerceIn(
+                        exposureRange.lower,
+                        exposureRange.upper,
+                    )
+                    camera.cameraControl.setExposureCompensationIndex(appliedExposure)
+                }
             } catch (error: Exception) {
                 Log.e(TAG, "Camera binding failed", error)
                 Toast.makeText(this, error.message ?: "Camera unavailable", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun focusAt(x: Float, y: Float) {
+        val camera = activeCamera ?: return
+        val point = binding.previewView.meteringPointFactory.createPoint(x, y)
+        val action = FocusMeteringAction.Builder(
+            point,
+            FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE,
+        )
+            .setAutoCancelDuration(3, TimeUnit.SECONDS)
+            .build()
+        camera.cameraControl.startFocusAndMetering(action)
     }
 
     private fun processImage(imageProxy: ImageProxy) {

@@ -17,6 +17,7 @@ data class ModelConfig(
     val iouThreshold: Float = 0.45f,
     val threadCount: Int = 4,
     val lensFacing: Int = androidx.camera.core.CameraSelector.LENS_FACING_BACK,
+    val exposureCompensation: Int = 0,
     val backend: ExecutionBackend = ExecutionBackend.CPU,
 ) {
     val isBundled: Boolean get() = source == ModelSource.ASSET
@@ -32,6 +33,7 @@ data class ModelConfig(
         put("iouThreshold", iouThreshold.toDouble())
         put("threadCount", threadCount)
         put("lensFacing", lensFacing)
+        put("exposureCompensation", exposureCompensation)
         put("backend", backend.name)
     }
 
@@ -49,6 +51,7 @@ data class ModelConfig(
                 iouThreshold = json.optDouble("iouThreshold", 0.45).toFloat(),
                 threadCount = json.optInt("threadCount", 4).coerceIn(1, 8),
                 lensFacing = json.optInt("lensFacing", androidx.camera.core.CameraSelector.LENS_FACING_BACK),
+                exposureCompensation = json.optInt("exposureCompensation", 0),
                 backend = runCatching {
                     ExecutionBackend.valueOf(json.optString("backend", ExecutionBackend.CPU.name))
                 }.getOrDefault(ExecutionBackend.CPU),

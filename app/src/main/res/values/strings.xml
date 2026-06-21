@@ -16,7 +16,7 @@
     <string name="camera">Camera</string>
     <string name="execution_backend">Execution backend</string>
     <string name="save">Save</string>
-    <string name="invalid_settings">Enter a name, thresholds from 0 to 1, and 1 to 8 threads.</string>
+    <string name="invalid_settings">Enter a name, thresholds from 0 to 1, 1 to 8 threads, and exposure from -20 to 20.</string>
     <string name="delete_model">Delete model?</string>
     <string name="delete_model_message">Delete %1$s and its stored files?</string>
     <string name="model_loading">Loading model…</string>
@@ -34,4 +34,5 @@
     <string name="text_model_selected">Text detector: %1$s</string>
     <string name="select_two_models">Select both a pill detector and a text detector.</string>
     <string name="pipeline_active">Pill: %1$s • Text: %2$s</string>
+    <string name="exposure_compensation">Exposure index (-20 to 20; negative is darker)</string>
 </resources>
