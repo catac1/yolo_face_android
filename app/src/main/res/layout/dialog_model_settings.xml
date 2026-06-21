@@ -1,20 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:fillViewport="true">
 
-    <EditText android:id="@+id/modelNameInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/model_name" android:inputType="text" />
-    <EditText android:id="@+id/confidenceInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/confidence_threshold" android:inputType="numberDecimal" />
-    <EditText android:id="@+id/iouInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/iou_threshold" android:inputType="numberDecimal" />
-    <EditText android:id="@+id/threadsInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/cpu_threads" android:inputType="number" />
-    <EditText android:id="@+id/exposureInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/exposure_compensation" android:inputType="numberSigned" />
-    <EditText android:id="@+id/blurThresholdInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/blur_threshold" android:inputType="numberDecimal" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/camera" />
-    <Spinner android:id="@+id/cameraSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/model_name" />
+        <EditText
+            android:id="@+id/modelNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/model_name_hint"
+            android:inputType="text" />
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/execution_backend" />
-    <Spinner android:id="@+id/backendSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
-</LinearLayout>
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/confidence_threshold" />
+        <EditText
+            android:id="@+id/confidenceInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/confidence_hint"
+            android:inputType="numberDecimal" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/iou_threshold" />
+        <EditText
+            android:id="@+id/iouInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/iou_hint"
+            android:inputType="numberDecimal" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/cpu_threads" />
+        <EditText
+            android:id="@+id/threadsInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/threads_hint"
+            android:inputType="number" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/exposure_compensation" />
+        <EditText
+            android:id="@+id/exposureInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/exposure_hint"
+            android:inputType="numberSigned" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/blur_threshold" />
+        <EditText
+            android:id="@+id/blurThresholdInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/blur_hint"
+            android:inputType="numberDecimal" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/camera" />
+        <Spinner
+            android:id="@+id/cameraSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/execution_backend" />
+        <Spinner
+            android:id="@+id/backendSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</ScrollView>

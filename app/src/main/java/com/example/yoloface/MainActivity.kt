@@ -24,11 +24,14 @@ import androidx.core.content.ContextCompat
 import com.example.yoloface.databinding.ActivityMainBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
+    private lateinit var inferenceExecutor: ExecutorService
     private var pillDetector: YoloDetector? = null
     private var textDetector: YoloDetector? = null
     private var pillModel: ModelConfig? = null
@@ -38,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private var activeCamera: Camera? = null
     private val fpsCounter = FpsCounter()
     private var lastFpsUiUpdateNs = 0L
+    private val inferenceBusy = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         }
         lensFacing = primaryModel().lensFacing
         cameraExecutor = Executors.newSingleThreadExecutor()
+        inferenceExecutor = Executors.newSingleThreadExecutor()
         binding.modelStatus.text = getString(R.string.model_loading)
         initializeDetector()
 
@@ -86,7 +91,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeDetector() {
-        cameraExecutor.execute {
+        inferenceExecutor.execute {
             var failedModel = primaryModel()
             var loadedPill: YoloDetector? = null
             var loadedText: YoloDetector? = null
@@ -160,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
-                .also { analysis -> analysis.setAnalyzer(cameraExecutor, ::processImage) }
+                .also { analysis -> analysis.setAnalyzer(cameraExecutor, ::queueImageForInference) }
             val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
             try {
                 cameraProvider.unbindAll()
@@ -193,44 +198,75 @@ class MainActivity : AppCompatActivity() {
         camera.cameraControl.startFocusAndMetering(action)
     }
 
-    private fun processImage(imageProxy: ImageProxy) {
-        try {
-            val bitmap = imageProxy.toBitmap()
-            val matrix = Matrix().apply {
-                postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-                if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
-                    postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
-                }
-            }
-            val transformed = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-            if (!passesBlurGate(transformed, primaryModel(), showStatus = true)) {
-                runOnUiThread {
-                    binding.overlayView.setResults(emptyList(), transformed.width, transformed.height)
-                }
-                return
-            }
-            val results = when (detectionMode) {
-                DetectionMode.PILL_ONLY -> pillDetector?.detect(transformed, DetectionStage.PILL) ?: return
-                DetectionMode.IMPRINT_ONLY -> textDetector?.detect(transformed, DetectionStage.TEXT) ?: return
-                DetectionMode.TWO_STAGE -> {
-                    val currentPillDetector = pillDetector ?: return
-                    val currentTextDetector = textDetector ?: return
-                    val pillBoxes = currentPillDetector.detect(transformed, DetectionStage.PILL)
-                    val textBoxes = pillBoxes
-                        .sortedByDescending { it.confidence }
-                        .take(MAX_PILL_CROPS_PER_FRAME)
-                        .flatMap { pill -> detectTextInPill(transformed, pill, currentTextDetector) }
-                    pillBoxes + textBoxes
-                }
-            }
-            runOnUiThread {
-                binding.overlayView.setResults(results, transformed.width, transformed.height)
-            }
-        } catch (error: Exception) {
-            Log.e(TAG, "Inference failed", error)
-        } finally {
-            updateFps()
+    private fun queueImageForInference(imageProxy: ImageProxy) {
+        if (!inferenceBusy.compareAndSet(false, true)) {
             imageProxy.close()
+            return
+        }
+        val transformed = try {
+            transformImage(imageProxy)
+        } catch (error: Exception) {
+            Log.e(TAG, "Camera frame conversion failed", error)
+            inferenceBusy.set(false)
+            null
+        } finally {
+            imageProxy.close()
+        } ?: return
+
+        try {
+            inferenceExecutor.execute {
+                try {
+                    processBitmap(transformed)
+                } catch (error: Exception) {
+                    Log.e(TAG, "Inference failed", error)
+                } finally {
+                    transformed.recycle()
+                    updateFps()
+                    inferenceBusy.set(false)
+                }
+            }
+        } catch (_: RejectedExecutionException) {
+            transformed.recycle()
+            inferenceBusy.set(false)
+        }
+    }
+
+    private fun transformImage(imageProxy: ImageProxy): Bitmap {
+        val bitmap = imageProxy.toBitmap()
+        val matrix = Matrix().apply {
+            postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+            if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
+            }
+        }
+        val transformed = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        if (transformed !== bitmap) bitmap.recycle()
+        return transformed
+    }
+
+    private fun processBitmap(transformed: Bitmap) {
+        if (!passesBlurGate(transformed, primaryModel(), showStatus = true)) {
+            runOnUiThread {
+                binding.overlayView.setResults(emptyList(), transformed.width, transformed.height)
+            }
+            return
+        }
+        val results = when (detectionMode) {
+            DetectionMode.PILL_ONLY -> pillDetector?.detect(transformed, DetectionStage.PILL) ?: return
+            DetectionMode.IMPRINT_ONLY -> textDetector?.detect(transformed, DetectionStage.TEXT) ?: return
+            DetectionMode.TWO_STAGE -> {
+                val currentPillDetector = pillDetector ?: return
+                val currentTextDetector = textDetector ?: return
+                val pillBoxes = currentPillDetector.detect(transformed, DetectionStage.PILL)
+                val textBoxes = pillBoxes
+                    .sortedByDescending { it.confidence }
+                    .take(MAX_PILL_CROPS_PER_FRAME)
+                    .flatMap { pill -> detectTextInPill(transformed, pill, currentTextDetector) }
+                pillBoxes + textBoxes
+            }
+        }
+        runOnUiThread {
+            binding.overlayView.setResults(results, transformed.width, transformed.height)
         }
     }
 
@@ -302,11 +338,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        cameraExecutor.execute {
-            textDetector?.close()
-            pillDetector?.close()
+        if (::cameraExecutor.isInitialized) cameraExecutor.shutdownNow()
+        if (::inferenceExecutor.isInitialized) {
+            inferenceExecutor.execute {
+                textDetector?.close()
+                pillDetector?.close()
+            }
+            inferenceExecutor.shutdown()
         }
-        cameraExecutor.shutdown()
         super.onDestroy()
     }
 

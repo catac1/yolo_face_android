@@ -45,4 +45,10 @@
     <string name="image_too_blurry">Too blurry: %1$.1f &lt; %2$.1f</string>
     <string name="fps_waiting">FPS: --</string>
     <string name="fps_value">FPS: %1$.1f</string>
+    <string name="model_name_hint">Example: Pill imprint detector</string>
+    <string name="confidence_hint">Example: 0.25</string>
+    <string name="iou_hint">Example: 0.45</string>
+    <string name="threads_hint">Example: 4</string>
+    <string name="exposure_hint">Example: -2 for a darker image</string>
+    <string name="blur_hint">0 disables; try 50–150</string>
 </resources>
