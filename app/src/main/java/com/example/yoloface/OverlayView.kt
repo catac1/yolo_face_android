@@ -81,7 +81,7 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             paint.color = color
             objectTypeTextPaint.color = color
             canvas.drawRect(mappedBox, paint)
-            val prefix = if (detection.stage == DetectionStage.PILL) "Pill" else "Text"
+            val prefix = if (detection.stage == DetectionStage.PILL) "Pill" else "Imprint"
             val text = "$prefix: ${detection.label} ${(detection.confidence * 100).toInt()}%"
             canvas.drawText(text, mappedBox.left, (mappedBox.top - 10f).coerceAtLeast(32f), objectTypeTextPaint)
         }

@@ -5,6 +5,7 @@ import org.json.JSONObject
 
 enum class ModelSource { ASSET, FILE }
 enum class ExecutionBackend { CPU, GPU, NNAPI }
+enum class DetectionMode { PILL_ONLY, IMPRINT_ONLY, TWO_STAGE }
 
 data class ModelConfig(
     val id: String,

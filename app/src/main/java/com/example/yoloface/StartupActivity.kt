@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.AdapterView
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
@@ -52,6 +53,25 @@ class StartupActivity : AppCompatActivity() {
         setContentView(binding.root)
         repository = ModelRepository(this)
 
+        val modes = DetectionMode.entries
+        binding.detectionModeSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            listOf(
+                getString(R.string.pill_only_mode),
+                getString(R.string.imprint_only_mode),
+                getString(R.string.two_stage_mode),
+            ),
+        )
+        binding.detectionModeSpinner.setSelection(modes.indexOf(repository.getDetectionMode()))
+        binding.detectionModeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                repository.setDetectionMode(modes[position])
+                refreshModels()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
         binding.modelList.choiceMode = android.widget.ListView.CHOICE_MODE_SINGLE
         binding.modelList.setOnItemClickListener { _, _, position, _ ->
             selectedId = models[position].id
@@ -75,14 +95,16 @@ class StartupActivity : AppCompatActivity() {
         binding.runButton.setOnClickListener {
             val pillModel = repository.getPillModel()
             val textModel = repository.getTextModel()
-            if (pillModel == null || textModel == null) {
-                Toast.makeText(this, R.string.select_two_models, Toast.LENGTH_LONG).show()
+            val mode = repository.getDetectionMode()
+            if (!isReady(mode, pillModel, textModel)) {
+                Toast.makeText(this, R.string.select_required_models, Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
             startActivity(
                 Intent(this, MainActivity::class.java)
-                    .putExtra(MainActivity.EXTRA_PILL_MODEL_ID, pillModel.id)
-                    .putExtra(MainActivity.EXTRA_TEXT_MODEL_ID, textModel.id)
+                    .putExtra(MainActivity.EXTRA_PILL_MODEL_ID, pillModel?.id)
+                    .putExtra(MainActivity.EXTRA_TEXT_MODEL_ID, textModel?.id)
+                    .putExtra(MainActivity.EXTRA_DETECTION_MODE, mode.name)
             )
         }
         refreshModels()
@@ -98,7 +120,7 @@ class StartupActivity : AppCompatActivity() {
         val rows = models.map { model ->
             val roles = buildList {
                 if (model.id == pillModel?.id) add("PILL")
-                if (model.id == textModel?.id) add("TEXT")
+                if (model.id == textModel?.id) add("IMPRINT")
             }.joinToString(" + ")
             val marker = if (model.id == selectedId) "✓ " else ""
             val source = if (model.isBundled) "Bundled" else "Imported"
@@ -115,7 +137,7 @@ class StartupActivity : AppCompatActivity() {
         binding.settingsButton.isEnabled = selected != null
         binding.setPillModelButton.isEnabled = selected != null
         binding.setTextModelButton.isEnabled = selected != null
-        binding.runButton.isEnabled = pillModel != null && textModel != null
+        binding.runButton.isEnabled = isReady(repository.getDetectionMode(), pillModel, textModel)
     }
 
     private fun importModel(modelUri: Uri, labelsUri: Uri) {
@@ -150,7 +172,17 @@ class StartupActivity : AppCompatActivity() {
         binding.progressGroup.visibility = if (busy) View.VISIBLE else View.GONE
         binding.progressText.text = message
         binding.importButton.isEnabled = !busy
-        binding.runButton.isEnabled = !busy && repository.getPillModel() != null && repository.getTextModel() != null
+        binding.runButton.isEnabled = !busy && isReady(
+            repository.getDetectionMode(),
+            repository.getPillModel(),
+            repository.getTextModel(),
+        )
+    }
+
+    private fun isReady(mode: DetectionMode, pillModel: ModelConfig?, imprintModel: ModelConfig?) = when (mode) {
+        DetectionMode.PILL_ONLY -> pillModel != null
+        DetectionMode.IMPRINT_ONLY -> imprintModel != null
+        DetectionMode.TWO_STAGE -> pillModel != null && imprintModel != null
     }
 
     private fun showSettings(model: ModelConfig) {

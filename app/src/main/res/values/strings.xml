@@ -27,12 +27,18 @@
     <string name="select_labels_message">Now select a UTF-8 .txt file containing one class name per line. For a single-class box model, the file should contain only: box</string>
     <string name="select_labels">Select labels</string>
     <string name="set_pill_model">Set pill model</string>
-    <string name="set_text_model">Set text model</string>
+    <string name="set_text_model">Set imprint model</string>
     <string name="pill_model_not_selected">Pill detector: not selected</string>
-    <string name="text_model_not_selected">Text detector: not selected</string>
+    <string name="text_model_not_selected">Imprint detector: not selected</string>
     <string name="pill_model_selected">Pill detector: %1$s</string>
-    <string name="text_model_selected">Text detector: %1$s</string>
+    <string name="text_model_selected">Imprint detector: %1$s</string>
     <string name="select_two_models">Select both a pill detector and a text detector.</string>
     <string name="pipeline_active">Pill: %1$s • Text: %2$s</string>
     <string name="exposure_compensation">Exposure index (-20 to 20; negative is darker)</string>
+    <string name="detection_mode">Detection mode</string>
+    <string name="pill_only_mode">Pill box detection only</string>
+    <string name="imprint_only_mode">Pill imprint detection only</string>
+    <string name="two_stage_mode">Both: pill box then imprint</string>
+    <string name="single_pipeline_active">Model: %1$s</string>
+    <string name="select_required_models">Assign the model required by the selected detection mode.</string>
 </resources>

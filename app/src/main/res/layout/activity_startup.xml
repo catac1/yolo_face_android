@@ -18,6 +18,16 @@
         android:text="@string/model_help"
         android:paddingBottom="12dp" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/detection_mode" />
+
+    <Spinner
+        android:id="@+id/detectionModeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <ListView
         android:id="@+id/modelList"
         android:layout_width="match_parent"

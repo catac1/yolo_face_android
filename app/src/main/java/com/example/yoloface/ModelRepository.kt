@@ -36,6 +36,14 @@ class ModelRepository(private val context: Context) {
     fun getTextModel(): ModelConfig? = preferences.getString(KEY_TEXT_MODEL, null)?.let(::getModel)
         ?: getSelectedModel()
 
+    fun getDetectionMode(): DetectionMode = runCatching {
+        DetectionMode.valueOf(preferences.getString(KEY_DETECTION_MODE, DetectionMode.IMPRINT_ONLY.name)!!)
+    }.getOrDefault(DetectionMode.IMPRINT_ONLY)
+
+    fun setDetectionMode(mode: DetectionMode) {
+        preferences.edit { putString(KEY_DETECTION_MODE, mode.name) }
+    }
+
     fun selectModel(id: String) {
         selectTextModel(id)
     }
@@ -171,6 +179,7 @@ class ModelRepository(private val context: Context) {
         private const val KEY_SELECTED_MODEL = "selected_model"
         private const val KEY_PILL_MODEL = "pill_model"
         private const val KEY_TEXT_MODEL = "text_model"
+        private const val KEY_DETECTION_MODE = "detection_mode"
         private const val MAX_LABEL_FILE_BYTES = 256 * 1024
         private const val MAX_LABEL_COUNT = 10_000
 
