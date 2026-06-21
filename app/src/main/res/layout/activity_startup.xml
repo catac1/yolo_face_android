@@ -28,6 +28,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <TextView
+        android:id="@+id/modeDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#16000000"
+        android:padding="10dp"
+        android:text="@string/imprint_only_description" />
+
     <ListView
         android:id="@+id/modelList"
         android:layout_width="match_parent"

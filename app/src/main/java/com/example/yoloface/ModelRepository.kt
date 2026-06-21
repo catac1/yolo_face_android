@@ -33,8 +33,10 @@ class ModelRepository(private val context: Context) {
 
     fun getPillModel(): ModelConfig? = preferences.getString(KEY_PILL_MODEL, null)?.let(::getModel)
 
-    fun getTextModel(): ModelConfig? = preferences.getString(KEY_TEXT_MODEL, null)?.let(::getModel)
-        ?: getSelectedModel()
+    fun getTextModel(): ModelConfig? = preferences.getString(
+        KEY_TEXT_MODEL,
+        preferences.getString(KEY_SELECTED_MODEL, null),
+    )?.let(::getModel)
 
     fun getDetectionMode(): DetectionMode = runCatching {
         DetectionMode.valueOf(preferences.getString(KEY_DETECTION_MODE, DetectionMode.IMPRINT_ONLY.name)!!)

@@ -119,6 +119,7 @@ class StartupActivity : AppCompatActivity() {
         }
         val pillModel = repository.getPillModel()
         val textModel = repository.getTextModel()
+        val mode = repository.getDetectionMode()
         val rows = models.map { model ->
             val roles = buildList {
                 if (model.id == pillModel?.id) add("PILL")
@@ -135,11 +136,37 @@ class StartupActivity : AppCompatActivity() {
             ?: getString(R.string.pill_model_not_selected)
         binding.textModelSelection.text = textModel?.let { getString(R.string.text_model_selected, it.displayName) }
             ?: getString(R.string.text_model_not_selected)
+        when (mode) {
+            DetectionMode.PILL_ONLY -> {
+                binding.modeDescription.setText(R.string.pill_only_description)
+                binding.pillModelSelection.visibility = View.VISIBLE
+                binding.textModelSelection.visibility = View.GONE
+                binding.setPillModelButton.visibility = View.VISIBLE
+                binding.setTextModelButton.visibility = View.GONE
+                binding.runButton.setText(R.string.run_pill_detection)
+            }
+            DetectionMode.IMPRINT_ONLY -> {
+                binding.modeDescription.setText(R.string.imprint_only_description)
+                binding.pillModelSelection.visibility = View.GONE
+                binding.textModelSelection.visibility = View.VISIBLE
+                binding.setPillModelButton.visibility = View.GONE
+                binding.setTextModelButton.visibility = View.VISIBLE
+                binding.runButton.setText(R.string.run_imprint_detection)
+            }
+            DetectionMode.TWO_STAGE -> {
+                binding.modeDescription.setText(R.string.two_stage_description)
+                binding.pillModelSelection.visibility = View.VISIBLE
+                binding.textModelSelection.visibility = View.VISIBLE
+                binding.setPillModelButton.visibility = View.VISIBLE
+                binding.setTextModelButton.visibility = View.VISIBLE
+                binding.runButton.setText(R.string.run_two_stage_detection)
+            }
+        }
         binding.deleteButton.isEnabled = selected?.isBundled == false
         binding.settingsButton.isEnabled = selected != null
-        binding.setPillModelButton.isEnabled = selected != null
-        binding.setTextModelButton.isEnabled = selected != null
-        binding.runButton.isEnabled = isReady(repository.getDetectionMode(), pillModel, textModel)
+        binding.setPillModelButton.isEnabled = selected != null && mode != DetectionMode.IMPRINT_ONLY
+        binding.setTextModelButton.isEnabled = selected != null && mode != DetectionMode.PILL_ONLY
+        binding.runButton.isEnabled = isReady(mode, pillModel, textModel)
     }
 
     private fun importModel(modelUri: Uri, labelsUri: Uri) {

@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">YOLO26n Face</string>
-    <string name="select_model">Select detection model</string>
-    <string name="model_help">Import a YOLO11 .tflite model and a labels .txt file with one class per line.</string>
+    <string name="app_name">Pill Detection</string>
+    <string name="select_model">Configure detection</string>
+    <string name="model_help">1. Import model(s).  2. Choose a mode.  3. Tap a model in the list and assign its role.  4. Run detection.</string>
     <string name="import_model">Import</string>
     <string name="settings">Settings</string>
     <string name="delete">Delete</string>
@@ -26,8 +26,8 @@
     <string name="select_labels_title">Select labels file</string>
     <string name="select_labels_message">Now select a UTF-8 .txt file containing one class name per line. For a single-class box model, the file should contain only: box</string>
     <string name="select_labels">Select labels</string>
-    <string name="set_pill_model">Set pill model</string>
-    <string name="set_text_model">Set imprint model</string>
+    <string name="set_pill_model">Use selected as pill detector</string>
+    <string name="set_text_model">Use selected as imprint detector</string>
     <string name="pill_model_not_selected">Pill detector: not selected</string>
     <string name="text_model_not_selected">Imprint detector: not selected</string>
     <string name="pill_model_selected">Pill detector: %1$s</string>
@@ -36,9 +36,15 @@
     <string name="pipeline_active">Pill: %1$s • Text: %2$s</string>
     <string name="exposure_compensation">Exposure index (-20 to 20; negative is darker)</string>
     <string name="detection_mode">Detection mode</string>
-    <string name="pill_only_mode">Pill box detection only</string>
-    <string name="imprint_only_mode">Pill imprint detection only</string>
-    <string name="two_stage_mode">Both: pill box then imprint</string>
+    <string name="pill_only_mode">Pill only</string>
+    <string name="imprint_only_mode">Imprint only</string>
+    <string name="two_stage_mode">Pill + imprint (two-stage)</string>
+    <string name="pill_only_description">Detect complete pill regions directly in the camera image. Select one model, then tap “Use selected as pill detector.”</string>
+    <string name="imprint_only_description">Detect pill imprints directly in the full camera image. Select one model, then tap “Use selected as imprint detector.”</string>
+    <string name="two_stage_description">First detect each pill, crop it, then detect its imprint. Assign both a pill detector and an imprint detector.</string>
+    <string name="run_pill_detection">Run pill detection</string>
+    <string name="run_imprint_detection">Run imprint detection</string>
+    <string name="run_two_stage_detection">Run pill + imprint detection</string>
     <string name="single_pipeline_active">Model: %1$s</string>
     <string name="select_required_models">Assign the model required by the selected detection mode.</string>
     <string name="blur_threshold">Minimum sharpness (0 disables; try 50–150)</string>
