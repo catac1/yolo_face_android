@@ -30,15 +30,22 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         style = Paint.Style.STROKE
         strokeWidth = 10f
     }
+    private val cropGuidePaint = Paint().apply {
+        color = Color.YELLOW
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+    }
 
     private var boundingBoxes: List<DetectionBox> = emptyList()
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
+    private var cropRegion: RectF? = null
 
-    fun setResults(boxes: List<DetectionBox>, imgWidth: Int, imgHeight: Int) {
+    fun setResults(boxes: List<DetectionBox>, imgWidth: Int, imgHeight: Int, cropRegion: RectF? = null) {
         this.boundingBoxes = boxes
         this.imageWidth = imgWidth
         this.imageHeight = imgHeight
+        this.cropRegion = cropRegion
         invalidate()
     }
 
@@ -53,7 +60,7 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         // Draw a red border along the edges of the view
         canvas.drawRect(0f, 0f, viewWidth, viewHeight, borderPaint)
         
-        if (boundingBoxes.isEmpty() || imageWidth == 1 || imageHeight == 1) {
+        if (imageWidth == 1 || imageHeight == 1) {
             return
         }
 
@@ -68,6 +75,16 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         // Calculate offset to center the scaled image
         val offsetX = (viewWidth - scaledWidth) / 2f
         val offsetY = (viewHeight - scaledHeight) / 2f
+
+        cropRegion?.let { crop ->
+            canvas.drawRect(
+                crop.left * scale + offsetX,
+                crop.top * scale + offsetY,
+                crop.right * scale + offsetX,
+                crop.bottom * scale + offsetY,
+                cropGuidePaint,
+            )
+        }
 
         for (detection in boundingBoxes) {
             val box = detection.bounds

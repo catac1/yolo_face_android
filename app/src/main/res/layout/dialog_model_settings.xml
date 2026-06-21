@@ -80,6 +80,22 @@
 
         <TextView
             style="@style/ModelSettingLabel"
+            android:text="@string/capture_resolution" />
+        <Spinner
+            android:id="@+id/captureResolutionSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
+            android:text="@string/input_region" />
+        <Spinner
+            android:id="@+id/inputRegionSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            style="@style/ModelSettingLabel"
             android:text="@string/execution_backend" />
         <Spinner
             android:id="@+id/backendSpinner"

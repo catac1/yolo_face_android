@@ -200,6 +200,22 @@ class StartupActivity : AppCompatActivity() {
             adapter = ArrayAdapter(this@StartupActivity, android.R.layout.simple_spinner_dropdown_item, listOf("Back camera", "Front camera"))
             setSelection(if (model.lensFacing == CameraSelector.LENS_FACING_FRONT) 1 else 0)
         }
+        val captureResolution = view.findViewById<Spinner>(R.id.captureResolutionSpinner).apply {
+            adapter = ArrayAdapter(
+                this@StartupActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                CaptureResolution.entries.map { "${it.width} × ${it.height}" },
+            )
+            setSelection(CaptureResolution.entries.indexOf(model.captureResolution))
+        }
+        val inputRegion = view.findViewById<Spinner>(R.id.inputRegionSpinner).apply {
+            adapter = ArrayAdapter(
+                this@StartupActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                listOf(getString(R.string.full_frame_640), getString(R.string.center_crop_720)),
+            )
+            setSelection(InputRegionMode.entries.indexOf(model.inputRegionMode))
+        }
         val backend = view.findViewById<Spinner>(R.id.backendSpinner).apply {
             adapter = ArrayAdapter(this@StartupActivity, android.R.layout.simple_spinner_dropdown_item, ExecutionBackend.entries.map { it.name })
             setSelection(ExecutionBackend.entries.indexOf(model.backend))
@@ -225,6 +241,7 @@ class StartupActivity : AppCompatActivity() {
                     Toast.makeText(this, R.string.invalid_settings, Toast.LENGTH_LONG).show()
                     return@setOnClickListener
                 }
+                val selectedInputRegion = InputRegionMode.entries[inputRegion.selectedItemPosition]
                 repository.updateModel(model.copy(
                     displayName = name.text.toString().trim(),
                     confidenceThreshold = confidenceValue,
@@ -233,6 +250,12 @@ class StartupActivity : AppCompatActivity() {
                     lensFacing = if (camera.selectedItemPosition == 1) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK,
                     exposureCompensation = exposureValue,
                     blurThreshold = blurThresholdValue,
+                    captureResolution = if (selectedInputRegion == InputRegionMode.CENTER_CROP_720) {
+                        CaptureResolution.HD_1280_720
+                    } else {
+                        CaptureResolution.entries[captureResolution.selectedItemPosition]
+                    },
+                    inputRegionMode = selectedInputRegion,
                     backend = ExecutionBackend.entries[backend.selectedItemPosition],
                 ))
                 dialog.dismiss()

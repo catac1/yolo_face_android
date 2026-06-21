@@ -51,4 +51,8 @@
     <string name="threads_hint">Example: 4</string>
     <string name="exposure_hint">Example: -2 for a darker image</string>
     <string name="blur_hint">0 disables; try 50–150</string>
+    <string name="capture_resolution">Camera capture resolution</string>
+    <string name="input_region">Inference camera region</string>
+    <string name="full_frame_640">Full frame → model 640×640 (no crop)</string>
+    <string name="center_crop_720">Centered 720×720 crop → model 640×640</string>
 </resources>

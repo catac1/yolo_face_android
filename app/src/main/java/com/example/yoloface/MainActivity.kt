@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
+import android.util.Size
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
@@ -18,6 +19,8 @@ import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -161,8 +164,25 @@ class MainActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also { it.surfaceProvider = binding.previewView.surfaceProvider }
+            val captureResolution = if (primaryModel().inputRegionMode == InputRegionMode.CENTER_CROP_720) {
+                CaptureResolution.HD_1280_720
+            } else {
+                primaryModel().captureResolution
+            }
+            val resolutionSelector = ResolutionSelector.Builder()
+                .setResolutionStrategy(
+                    ResolutionStrategy(
+                        Size(captureResolution.width, captureResolution.height),
+                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
+                    )
+                )
+                .build()
+            val preview = Preview.Builder()
+                .setResolutionSelector(resolutionSelector)
+                .build()
+                .also { it.surfaceProvider = binding.previewView.surfaceProvider }
             val imageAnalyzer = ImageAnalysis.Builder()
+                .setResolutionSelector(resolutionSelector)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also { analysis -> analysis.setAnalyzer(cameraExecutor, ::queueImageForInference) }
@@ -245,28 +265,56 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processBitmap(transformed: Bitmap) {
-        if (!passesBlurGate(transformed, primaryModel(), showStatus = true)) {
-            runOnUiThread {
-                binding.overlayView.setResults(emptyList(), transformed.width, transformed.height)
-            }
-            return
+        val frameWidth = transformed.width
+        val frameHeight = transformed.height
+        val useCrop = primaryModel().inputRegionMode == InputRegionMode.CENTER_CROP_720
+        val cropRect = if (useCrop) {
+            FrameCropper.centeredSquare(frameWidth, frameHeight, CENTER_CROP_SIZE)
+        } else {
+            android.graphics.Rect(0, 0, frameWidth, frameHeight)
         }
-        val results = when (detectionMode) {
-            DetectionMode.PILL_ONLY -> pillDetector?.detect(transformed, DetectionStage.PILL) ?: return
-            DetectionMode.IMPRINT_ONLY -> textDetector?.detect(transformed, DetectionStage.TEXT) ?: return
+        val inferenceBitmap = if (useCrop) {
+            Bitmap.createBitmap(transformed, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())
+        } else transformed
+        val guide = if (useCrop) RectF(cropRect) else null
+        try {
+            if (!passesBlurGate(inferenceBitmap, primaryModel(), showStatus = true)) {
+                runOnUiThread {
+                    binding.overlayView.setResults(emptyList(), frameWidth, frameHeight, guide)
+                }
+                return
+            }
+            val localResults = runPipeline(inferenceBitmap)
+            val results = if (useCrop) localResults.map { detection ->
+                detection.copy(bounds = RectF(
+                    detection.bounds.left + cropRect.left,
+                    detection.bounds.top + cropRect.top,
+                    detection.bounds.right + cropRect.left,
+                    detection.bounds.bottom + cropRect.top,
+                ))
+            } else localResults
+            runOnUiThread {
+                binding.overlayView.setResults(results, frameWidth, frameHeight, guide)
+            }
+        } finally {
+            if (inferenceBitmap !== transformed) inferenceBitmap.recycle()
+        }
+    }
+
+    private fun runPipeline(frame: Bitmap): List<DetectionBox> {
+        return when (detectionMode) {
+            DetectionMode.PILL_ONLY -> pillDetector?.detect(frame, DetectionStage.PILL).orEmpty()
+            DetectionMode.IMPRINT_ONLY -> textDetector?.detect(frame, DetectionStage.TEXT).orEmpty()
             DetectionMode.TWO_STAGE -> {
-                val currentPillDetector = pillDetector ?: return
-                val currentTextDetector = textDetector ?: return
-                val pillBoxes = currentPillDetector.detect(transformed, DetectionStage.PILL)
+                val currentPillDetector = pillDetector ?: return emptyList()
+                val currentTextDetector = textDetector ?: return emptyList()
+                val pillBoxes = currentPillDetector.detect(frame, DetectionStage.PILL)
                 val textBoxes = pillBoxes
                     .sortedByDescending { it.confidence }
                     .take(MAX_PILL_CROPS_PER_FRAME)
-                    .flatMap { pill -> detectTextInPill(transformed, pill, currentTextDetector) }
+                    .flatMap { pill -> detectTextInPill(frame, pill, currentTextDetector) }
                 pillBoxes + textBoxes
             }
-        }
-        runOnUiThread {
-            binding.overlayView.setResults(results, transformed.width, transformed.height)
         }
     }
 
@@ -359,5 +407,6 @@ class MainActivity : AppCompatActivity() {
         private const val MAX_PILL_CROPS_PER_FRAME = 5
         private const val CROP_PADDING_RATIO = 0.05f
         private const val FPS_UI_UPDATE_INTERVAL_NS = 250_000_000L
+        private const val CENTER_CROP_SIZE = 720
     }
 }

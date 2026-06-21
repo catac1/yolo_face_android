@@ -6,6 +6,11 @@ import org.json.JSONObject
 enum class ModelSource { ASSET, FILE }
 enum class ExecutionBackend { CPU, GPU, NNAPI }
 enum class DetectionMode { PILL_ONLY, IMPRINT_ONLY, TWO_STAGE }
+enum class CaptureResolution(val width: Int, val height: Int) {
+    HD_1280_720(1280, 720),
+    VGA_640_480(640, 480),
+}
+enum class InputRegionMode { FULL_FRAME, CENTER_CROP_720 }
 
 data class ModelConfig(
     val id: String,
@@ -20,6 +25,8 @@ data class ModelConfig(
     val lensFacing: Int = androidx.camera.core.CameraSelector.LENS_FACING_BACK,
     val exposureCompensation: Int = 0,
     val blurThreshold: Float = 0f,
+    val captureResolution: CaptureResolution = CaptureResolution.HD_1280_720,
+    val inputRegionMode: InputRegionMode = InputRegionMode.FULL_FRAME,
     val backend: ExecutionBackend = ExecutionBackend.NNAPI,
 ) {
     val isBundled: Boolean get() = source == ModelSource.ASSET
@@ -37,6 +44,8 @@ data class ModelConfig(
         put("lensFacing", lensFacing)
         put("exposureCompensation", exposureCompensation)
         put("blurThreshold", blurThreshold.toDouble())
+        put("captureResolution", captureResolution.name)
+        put("inputRegionMode", inputRegionMode.name)
         put("backend", backend.name)
     }
 
@@ -56,6 +65,14 @@ data class ModelConfig(
                 lensFacing = json.optInt("lensFacing", androidx.camera.core.CameraSelector.LENS_FACING_BACK),
                 exposureCompensation = json.optInt("exposureCompensation", 0),
                 blurThreshold = json.optDouble("blurThreshold", 0.0).toFloat(),
+                captureResolution = runCatching {
+                    CaptureResolution.valueOf(
+                        json.optString("captureResolution", CaptureResolution.HD_1280_720.name)
+                    )
+                }.getOrDefault(CaptureResolution.HD_1280_720),
+                inputRegionMode = runCatching {
+                    InputRegionMode.valueOf(json.optString("inputRegionMode", InputRegionMode.FULL_FRAME.name))
+                }.getOrDefault(InputRegionMode.FULL_FRAME),
                 backend = runCatching {
                     ExecutionBackend.valueOf(json.optString("backend", ExecutionBackend.NNAPI.name))
                 }.getOrDefault(ExecutionBackend.NNAPI),
