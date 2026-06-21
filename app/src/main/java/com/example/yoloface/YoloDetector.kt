@@ -6,10 +6,6 @@ import android.graphics.RectF
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.nnapi.NnApiDelegate
-import org.tensorflow.lite.support.common.ops.NormalizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
 import java.io.File
 import java.io.FileInputStream
 import java.nio.MappedByteBuffer
@@ -30,7 +26,6 @@ class YoloDetector(private val context: Context, val config: ModelConfig) : Auto
     private var nnApiDelegate: NnApiDelegate? = null
     private val interpreter: Interpreter
     private val shape: ModelInspector.ModelShape
-    private val imageProcessor: ImageProcessor
 
     init {
         val options = Interpreter.Options().apply {
@@ -53,10 +48,6 @@ class YoloDetector(private val context: Context, val config: ModelConfig) : Auto
                 ModelSource.FILE -> Interpreter(File(config.modelLocation), options)
             }
             shape = ModelInspector.inspect(interpreter, config.labels.size)
-            imageProcessor = ImageProcessor.Builder()
-                .add(ResizeOp(shape.inputHeight, shape.inputWidth, ResizeOp.ResizeMethod.BILINEAR))
-                .add(NormalizeOp(0f, 255f))
-                .build()
         } catch (error: Throwable) {
             gpuDelegate?.close()
             nnApiDelegate?.close()
@@ -65,15 +56,13 @@ class YoloDetector(private val context: Context, val config: ModelConfig) : Auto
     }
 
     fun detect(bitmap: Bitmap, stage: DetectionStage): List<DetectionBox> {
-        var tensorImage = TensorImage(org.tensorflow.lite.DataType.FLOAT32)
-        tensorImage.load(bitmap)
-        tensorImage = imageProcessor.process(tensorImage)
-
         val outputShape = interpreter.getOutputTensor(0).shape()
-        val output = Array(1) { Array(outputShape[1]) { FloatArray(outputShape[2]) } }
-        interpreter.run(tensorImage.buffer, output)
+        val input = TensorBufferCodec.bitmapToInput(bitmap, shape)
+        val outputBuffer = TensorBufferCodec.allocateOutput(shape.outputType, outputShape.drop(1).reduce(Int::times))
+        interpreter.run(input, outputBuffer)
+        val output = TensorBufferCodec.decodeOutput(outputBuffer, shape, outputShape[1], outputShape[2])
         return YoloOutputParser.parse(
-            raw = output[0],
+            raw = output,
             attributeFirst = shape.attributeFirst,
             labels = config.labels,
             confidenceThreshold = config.confidenceThreshold,
